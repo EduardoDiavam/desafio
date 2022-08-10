@@ -2,7 +2,7 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon  --experimental-modules --es-module-specifier-resolution=node src/server.js",
+    "dev": "npx kill-port 6060 && nodemon  --experimental-modules --es-module-specifier-resolution=node src/server.js",
     "build": "rm -rf build/ && prettier --write src/ && tsc"
   },
   "dependencies": {

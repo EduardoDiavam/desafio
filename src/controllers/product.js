@@ -21,24 +21,52 @@ const get = async (req, res, next) => {
       newProductDate <= newFinishDate.getTime()
     );
   });
-  console.log(filtedProductList);
-  const groupedProductList = filtedProductList.reduce((hash, obj) => ({
-    ...hash,
-    [obj["product_url"]]: (hash[obj["product_url"]] || []).concat(obj),
-  }));
-  const newProductList = groupedProductList.map((groupedArray) => {
-    const groupedDates = groupedArray.reduce((hash, obj) => ({
-      ...hash,
-      [obj["consult_date"]]: (hash[obj["consult_date"]] || []).concat(obj),
-    }));
-    const result = groupedDates.map((value, index) => {
-      const total = value.reduce(
-        (accumulator, current) =>
-          accumulator + Number(current["vendas_no_dia"]),
-        0
+  const groupedProductListByProductUrl = filtedProductList.reduce(
+    (previousValue, currentValue) => {
+      previousValue[currentValue.product_url] =
+        previousValue[currentValue.product_url] || [];
+      previousValue[currentValue.product_url].push(currentValue);
+      return previousValue;
+    },
+    Object.create(null)
+  );
+  const newProductList = Object.keys(groupedProductListByProductUrl).map(
+    (key) => {
+      const groupedArray = groupedProductListByProductUrl[key];
+      const groupedDates = groupedArray.reduce(
+        (previousValue, currentValue) => {
+          previousValue[currentValue.consult_date] =
+            previousValue[currentValue.consult_date] || [];
+          previousValue[currentValue.consult_date].push(currentValue);
+          return previousValue;
+        },
+        Object.create(null)
       );
-    });
-  });
+      const totalSummedByDate = Object.keys(groupedDates).map((key) => {
+        const totalByDateoBJ = {};
+        const groupedByDate = groupedDates[key];
+        const totalPerDate = groupedByDate.reduce(
+          (previousValue, { vendas_no_dia }) => previousValue + vendas_no_dia,
+          0
+        );
+        totalByDateoBJ[key] = totalPerDate;
+        return totalByDateoBJ;
+      });
+      const total = totalSummedByDate.reduce((previousValue, currentValue) => {
+        const firstKey = Object.keys(currentValue)[0];
+        const value = currentValue[firstKey];
+        return previousValue + value;
+      }, 0);
+      const productToReturn = Object.assign(
+        { total },
+        groupedArray[0],
+
+        ...totalSummedByDate
+      );
+      delete productToReturn.vendas_no_dia;
+      return productToReturn;
+    }
+  );
   return newProductList;
 };
 
